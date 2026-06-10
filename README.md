@@ -28,18 +28,23 @@ etc.) inserted directly. `[ ] '` come from the symbol layer / swipes, exactly
 as on the stock English layout.
 
 **Source data:** `boshiamy_data.lua` is generated from a *licensed* `boshiamy.lime`
-export, then **filtered to Traditional Chinese only** — Simplified-Chinese,
-Japanese kana and Japanese-shinjitai candidates are dropped, and any code left
-with no candidates is removed. Result: 32,919 codes / 45,309 mappings (down from
-40,208 / 60,296). The Boshiamy table is proprietary — **do not redistribute this
-file or this repo publicly.**
+export, then **filtered to Traditional Chinese only** in two passes. Result:
+32,919 codes / 44,973 mappings (down from 40,208 / 60,296). The Boshiamy table is
+proprietary — **do not redistribute this file or this repo publicly.**
 
-The Traditional-only filter uses OpenCC (`pip install opencc`): a Han candidate
-is kept iff it is Big5-encodable, or is left unchanged by both `s2t` and `jp2t`
-(rescues rare Traditional chars Big5 lacks). Big5 is used as the arbiter so that
-characters that are *both* a Simplified form and a legitimate Traditional
-character (干, 后, 里, 范, 余 …) are kept rather than wrongly dropped. Punctuation
-and other symbols are always kept; kana are always dropped.
+The filter uses OpenCC (`pip install opencc`):
+
+- **Pass 1 — character filter.** A Han candidate is kept iff it is Big5-encodable,
+  or is left unchanged by both `s2t` and `jp2t` (rescues rare Traditional chars
+  Big5 lacks). Big5 is the arbiter so characters that are *both* a Simplified form
+  and a legitimate Traditional character (干, 后, 里, 范, 余 …) are kept rather than
+  wrongly dropped. Punctuation/symbols are always kept; kana always dropped.
+- **Pass 2 — per-code dedup.** Within a single code's candidate list, drop any
+  variant whose preferred traditional form (`s2t`) is already offered for that
+  same code. This removes Simplified-looking variants that survive Pass 1 because
+  they're technically in the Taiwan standard (么, 体, 与 — 么 is even in 甲表), e.g.
+  code `lw`: candidates `麼 磁 么` → `麼 磁`. It never drops independent Traditional
+  characters like 干, whose form 幹 lives under a *different* code.
 
 Regenerate from a fresh `.lime` export with:
 
@@ -56,7 +61,7 @@ def is_kana(c):
 def is_cjk(c):
     o = ord(c)
     return (0x3400 <= o <= 0x4DBF) or (0x4E00 <= o <= 0x9FFF) or (0xF900 <= o <= 0xFAFF) or (0x20000 <= o <= 0x2FFFF)
-def keep(c):
+def keep(c):                                  # pass 1
     if is_kana(c): return False
     if is_cjk(c):
         return in_big5(c) or (s2t.convert(c) == c and jp2t.convert(c) == c)
@@ -69,7 +74,10 @@ for line in raw.split('\n'):
     d.setdefault(code, []).append(ch)
 out = ['return {']
 for code, vs in d.items():
-    vs = [v for v in vs if keep(v)]
+    vs = [v for v in vs if keep(v)]           # pass 1: character filter
+    present = set(vs)
+    vs = [c for c in vs                        # pass 2: per-code traditional-preferred dedup
+          if not (s2t.convert(c) != c and s2t.convert(c) in present)]
     if not vs: continue
     key = '["%s"]' % code
     out.append('%s=%s,' % (key, '"%s"' % vs[0] if len(vs) == 1

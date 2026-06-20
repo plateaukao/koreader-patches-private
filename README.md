@@ -13,12 +13,23 @@ bundled pinyin/stroke keyboards).
 **Install:** copy **both** files into `koreader/patches/` (they must sit in the
 same folder — the patch loads `boshiamy_data.lua` from beside itself). Restart,
 then enable under **Settings → Keyboard → Keyboard layouts → 中文（嘸蝦米）(zh)**
-and pick it from the globe key. The "Show character candidates" toggle lives in
+and pick it from the globe key. The "Show inline candidate hints" toggle lives in
 **Layout-specific keyboard settings**.
 
-**Usage:** type the lowercase Boshiamy code; candidates appear inline after the
-character. `Space` commits the first/highlighted candidate, cycling is via the
-← / → arrows, and `Backspace` removes one code key at a time.
+**Usage:** type the lowercase Boshiamy code; a **candidate bar** above the keyboard
+lists the matches for the current code — **tap** one to commit it, or page through
+longer lists with the `◀` / `▶` keys at the bar's ends. `Space` commits the
+highlighted candidate, `← / →` cycle the inline selection, and `Backspace` removes
+one code key at a time.
+
+The candidate bar is the primary candidate display (inspired by
+[`pinyinplus.koplugin`](https://github.com/QiuYukang/pinyinplus.koplugin), but it
+augments the stock `generic_ime` engine rather than replacing it — so cycling,
+stepped backspace and the inline preview keep working). It mirrors the engine's
+composing state and commits a tapped candidate through the engine's own helpers,
+so it never drifts out of sync. The older inline `[候選…]` hint is **off by
+default** now (the bar supersedes it); re-enable it with "Show inline candidate
+hints" if you want both.
 
 The full Boshiamy alphabet feeds the IME: `a`–`z` plus the `, . [ ] '` selector
 keys, so every code in the table is reachable (including the kana and full-width

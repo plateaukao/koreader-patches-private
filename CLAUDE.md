@@ -22,6 +22,11 @@ run in this repo itself.
 - `2-selection-highlight-style.lua` — draws the drag text selection with the current
   default highlight style + color instead of the stock inverted/gray selection.
   Standalone; see "Selection patch" below.
+- `2-squiggly-highlight.lua` — adds a "Squiggly" wavy-underline highlight style (moved
+  here from the former public `koreader-patches` repo). Standalone.
+- `2-cre-rotate-japanese-book.lua` — per-book rotated/vertical reading for Japanese
+  crengine books (patches `ReaderRolling`/`ReaderView`, rotated highlight drawing,
+  image-page detection). Standalone; toggled from the Typeset menu.
 - `README.md` — install/usage instructions and the full data-regeneration recipe.
 
 ## boshiamy_data.lua is proprietary — do not publish

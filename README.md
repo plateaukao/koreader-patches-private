@@ -125,3 +125,21 @@ document object, and paints it after `ReaderView:paintTo()` via
 `getScreenBoxesFromPositions()` (the same call saved highlights use).
 `clearSelection()` drops the tracked range. Smoke tests:
 `luajit test/test_selection_highlight_style.lua`.
+
+## Squiggly highlight style — `2-squiggly-highlight.lua`
+
+Adds a **Squiggly** (wavy underline) highlight style next to the built-in Lighten /
+Underline / Strikethrough / Invert styles, for both EPUB and PDF. Pick it under
+**Highlights → Highlight style** (tap = this book, long-press = global default);
+highlight colors apply. Moved here from the former public `koreader-patches` repo.
+Tunables at the top of the draw loop: `amp` (amplitude), `wlen` (wavelength),
+`thick` (stroke width).
+
+## Vertical (rotated) reading for Japanese EPUBs — `2-cre-rotate-japanese-book.lua`
+
+Per-book "vertical reading hack" for crengine documents: renders the page rotated 90°
+so vertical Japanese text reads naturally, with highlights/underlines/squiggles drawn in
+the rotated frame, image pages detected and shown unrotated, and hold-pan corner scroll
+fixed for the rotated coordinates. Toggle under **Typeset → Toggle vertical reading**
+(stored per book as `vertical_reading_hack`); it also adds a "Dictionary on single word
+selection" toggle.

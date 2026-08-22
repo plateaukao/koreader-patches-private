@@ -19,6 +19,9 @@ run in this repo itself.
 - `2-boshiamy.lua` + `boshiamy_data.lua` — the 嘸蝦米 (Boshiamy) Traditional-Chinese
   keyboard IME. The two files are a unit: the patch locates `boshiamy_data.lua` *beside
   itself* via `debug.getinfo`, so both must be installed in the same folder.
+- `2-selection-highlight-style.lua` — draws the drag text selection with the current
+  default highlight style + color instead of the stock inverted/gray selection.
+  Standalone; see "Selection patch" below.
 - `README.md` — install/usage instructions and the full data-regeneration recipe.
 
 ## boshiamy_data.lua is proprietary — do not publish
@@ -93,6 +96,37 @@ them, cross-reference the live `en_keyboard.lua` structure rather than guessing.
 intent: `,` and `.` must *tap* to their ASCII selves (so `generic_ime` treats them as code
 keys), with full-width Chinese punctuation on the swipe directions (those glyphs aren't in
 `keys_string`, so they insert literally).
+
+## Selection patch (`2-selection-highlight-style.lua`)
+
+Two render paths, because KOReader has two:
+
+- **Paging (PDF/DjVu):** `ReaderView:drawTempHighlight` is replaced to paint
+  `highlight.temp` boxes with `highlight.saved_drawer`/`saved_color` via the stock
+  `drawHighlightRect`. `highlight.temp` is blanked during the call so newer builds use
+  the regular `highlight_lighten_factor` (not `highlight_selection_lighten_factor`).
+- **Rolling (crengine):** the engine paints the selection itself (`selectRange` with
+  draw flags -> `FillRect` with `crengine.highlight.selection.color`, inside the page
+  render) so it cannot be restyled from Lua. The patch wraps
+  `CreDocument:getWordFromPosition/getTextFromPositions` to force
+  `do_not_draw_selection = true` (the range is still set, flags 0 -> no marks; text and
+  pos0/pos1 are unchanged), tracks `{pos0, pos1}` in `doc._selhl_range`, and paints it
+  after `ReaderView:paintTo` via `getScreenBoxesFromPositions(pos0, pos1, true)` —
+  clipped to the visible page by crengine, with the same cheap
+  `getPosFromXPointer` viewport pre-check `drawXPointerSavedHighlight` uses.
+  `CreDocument:clearSelection` clears the range. `ReaderHighlight:extendSelection`
+  draws natively through `getTextFromXPointers(.., true)`; the wrapper clears that via
+  the raw `_document:clearSelection()` (bypassing our wrapper) and tracks the range.
+  `getTextFromXPointers` itself is deliberately NOT wrapped — search-result
+  highlighting uses it and keeps its stock look.
+- A lookup that returns nil keeps the previous range (mirrors crengine, which only
+  replaces the selection on a hit). Callers passing `do_not_draw_selection = true`
+  (dictionary, key selection) are never tracked.
+- `drawTempHighlight` returns early on rolling docs when a range is tracked, so a
+  plugin that also fills `highlight.temp` on EPUB (the pencil stylus plugin does)
+  doesn't get painted twice.
+- Headless tests: `luajit test/test_selection_highlight_style.lua` (stubbed modules,
+  asserts what reaches `drawHighlightRect` and the draw-suppression flags).
 
 ## Conventions for new patches
 

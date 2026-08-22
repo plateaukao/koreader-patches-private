@@ -102,3 +102,26 @@ All remaining codes are input-reachable: the IME consumes `a`–`z` plus `, . [ 
 (see `keys_string` in the patch). To make the `,`/`.` keys insert punctuation
 *directly* instead of composing, remove those symbols from `keys_string` and
 give the keys full-width primaries.
+
+## Selection in highlight style — `2-selection-highlight-style.lua`
+
+Draws the in-progress text selection (long-press + drag) with the reader's
+**current default highlight style and color** — exactly as the highlight will look
+once saved — instead of KOReader's stock selection look (inverted boxes on
+PDF/DjVu; crengine's flat gray fill on EPUB). Every style works (lighten /
+underline / strikeout / invert, plus patched-in ones like squiggly), in the
+chosen color, on both document types.
+
+**Install:** copy the file into `koreader/patches/` and restart. No settings —
+it follows whatever **Highlights → Highlight style / color** is set to (global
+default or the per-book override).
+
+**How:** on paged documents it re-paints KOReader's own `highlight.temp` boxes
+through `ReaderView:drawHighlightRect()` with `saved_drawer`/`saved_color`. On
+crengine documents the engine draws the selection itself inside the page render,
+so the patch calls `getWordFromPosition` / `getTextFromPositions` with
+`do_not_draw_selection = true`, remembers the selected xpointer range on the
+document object, and paints it after `ReaderView:paintTo()` via
+`getScreenBoxesFromPositions()` (the same call saved highlights use).
+`clearSelection()` drops the tracked range. Smoke tests:
+`luajit test/test_selection_highlight_style.lua`.
